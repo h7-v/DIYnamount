@@ -3,23 +3,31 @@
   DIYnamount project code written by MCA using libraries included below.
   ESPAsyncWebServer code written by Rui Santos and extended by MCA.
   https://www.mcaud.io/
+  https://github.com/h7-v
+  https://fosstodon.org/@h7
 *********/
 
 /*********
   Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-websocket-server-arduino/
+  Complete project details at
+  https://RandomNerdTutorials.com/esp32-websocket-server-arduino/
   https://RandomNerdTutorials.com/esp8266-nodemcu-web-server-websocket-sliders/
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
 *********/
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Includes and defines
+
+// Please see README.md in this repository for more information.
+
+/*
+Includes and defines
+*/
 // Import required libraries
 #include <Arduino.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
-// Fixes for HTTP compiler errors (no longer needed)
+// Fixes for HTTP compiler errors (if needed)
 //#define WEBSERVER_H
 //#include "WebServer.h"
 
@@ -27,7 +35,13 @@
 #include <SPIFFS.h>
 #include <Arduino_JSON.h>
 
-// Breadboard position from left to right: ESP32, TMC2208 (MOTORPOS) for speaker position, TMC2208 (MOTORDIST) for speaker distance
+// Breadboard position from left to right: ESP32, TMC2208 (MOTORPOS) for
+// speaker position, TMC2208 (MOTORDIST) for speaker distance.
+// POS = Microphone horizontal position to front of speaker
+// DIST = Microphone distance from front of speaker
+// EN = Motor driver enable/disable
+// DIR = Motor spin direction clockwise/anticlockwise
+// STEP = Step motor step pulse
 #define MOTORPOSEN 26 // HIGH turns motor off, LOW turns motor on
 #define MOTORDISTEN 32 // HIGH turns motor off, LOW turns motor on
 #define MOTORPOSDIR 14
@@ -35,21 +49,35 @@
 #define MOTORDISTDIR 25
 #define MOTORDISTSTEP 33
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////setup() functions and lib init
-// MCA home network before WifiManager
-//const char* ssid     = "VodafoneConnect52230893";
-//const char* password = "eyfxh3f37t2e5cp";
+/*
+setup() functions and lib init
+*/
+// Below two lines allow for WiFi connection without WiFi manager
+//const char* ssid     = "your_network_ssid";
+//const char* password = "your_network_pass";
 
+
+// If WiFi disconnects while in use, LED connection light turns off and
+// device restarts
 void WiFiStationDisconnected(WiFiEvent_t event, WiFiEventInfo_t info)
 {
     digitalWrite(2, LOW);
     ESP.restart();
 }
 
+
 void initWiFiManager() {
-  //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
+  //WiFiManager, Local intialization
+  //Once its business is done, there is no need to keep it around
   WiFiManager wm;
   wm.setHttpPort(81);
+  // WiFi manager is designed to be displayed upon connection to the stand
+  // network similarly to how is done on hotel networks. This is done by
+  // running a web server on port 80 that the device can then interface with.
+  // This is however not possible here as the AsyncWebServer can only run on
+  // port 80.
+  // In order to connect to the stand network for WiFi config,
+  // use a web browser to visit 192.168.4.1:81
 
   // reset settings - wipe stored credentials for testing
   // these are stored by the esp library
@@ -60,25 +88,29 @@ void initWiFiManager() {
   wm.setClass("invert");
 
   // set static ip,gw,sn
-  wm.setSTAStaticIPConfig(IPAddress(192,168,1,117), IPAddress(192,168,1,1), IPAddress(255,255,255,0));
+  wm.setSTAStaticIPConfig(IPAddress(192,168,1,117), // IP address
+                          IPAddress(192,168,1,1), // Gateway
+                          IPAddress(255,255,255,0)); // Subnet mask
 
   // Automatically connect using saved credentials,
   // if connection fails, it starts an access point with the specified ssid.
   bool res; // used to indicate successful connection
   
-  // wm.autoConnect("ssid", "password"); or ignore second parameter for open network
+  // wm.autoConnect("ssid", "password"); or ignore second parameter for open
+  // network.
+  // This method is used to set the ssid and password for connecting to the
+  // ESP32 for WiFi connection setup to a WiFi network
   res = wm.autoConnect("DIYnamount Config");
 
   if(!res) {
       Serial.println("Failed to connect");
-      // ESP.restart();
+      // ESP.restart(); // or consider restarting manually
   } 
   else {
       //if you get here you have connected to the WiFi    
       Serial.println("connected...yeey :)");
   }
 
-  
   while (WiFi.status() != WL_CONNECTED) {
       delay(500);
       Serial.print(".");
@@ -89,7 +121,7 @@ void initWiFiManager() {
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
 
-  // 3 LED flashes to indicate successful connection
+  // 3 ESP32 LED flashes to indicate successful connection
       digitalWrite(2, HIGH);
       delay(200);
       digitalWrite(2, LOW);
@@ -101,6 +133,7 @@ void initWiFiManager() {
       digitalWrite(2, HIGH);
 }
   
+
 void initFileSystem() {
   if(!SPIFFS.begin()){
         Serial.println("An Error has occurred while mounting SPIFFS");
@@ -110,42 +143,63 @@ void initFileSystem() {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Physical parts setup
+
+/*
+Physical parts setup
+*/
 //**************************************************
-// CAUTION: The following 2 variables were used for testing when the hardware did not exist.
+// Motor setup. You will need to tweak these values according to the size
+// or your microphone stand. The below settings apply to TMC2208 motor drivers.
+
+// CAUTION: The following 2 variables were used for testing when the hardware
+// did not exist.
 // The new value at stepsForDividedTurn is used with the actual hardware.
 
-// change this to fit the number of motor steps per revolution
-// 200 = full rotation? 2048 for ULN2003 motors but not sure about microsteps for TMC2208. Supposedly 200 with default settings
+// Change this to fit the number of motor steps per revolution
+// 2048 for ULN2003 motors but not sure about microsteps for TMC2208 - 
+// TMC2208 supposedly 200 with default settings.
 //const int stepsPerRevolution = 200;
-// Set the division according to how much the motor should rotate per one slider step
-//const int stepsForDividedTurn = stepsPerRevolution / 5;
-// TWEAK THIS FOR THE LENGTH OF THE ALUMINIUM!
-const int stepsForDividedTurn = 58;
 
-// Time spent waiting between step pulses. Lower values rotate the motors faster
+// Set the division according to how much the motor should rotate per one
+// slider step
+//const int stepsForDividedTurn = stepsPerRevolution / 5;
+
+// TWEAK THIS FOR THE LENGTH OF THE ALUMINIUM!
+// This value represents the amount of steps the motor should turn for
+// a single increase or decrease in value on the web GUI slider
+// In this case 5800 steps would move from position 1 to 100. This must be
+// adjusted according to the length of your aluminium extrusion.
+// This constant also assumes that both position and distance extrusions are
+// the same length.
+const int stepsForOneSliderMove = 58;
+
+// Time spent waiting between step pulses. Lower values rotate the motors
+// faster. This constant controls the speed of both motors simultaneously.
 const int motorStepDelay = 700;
 //**************************************************
 
-int stand_x_pos_control = 50;
+// x_pos = Horizontal position to speaker
+// y_pos = Distance from speaker
+int stand_x_pos_control = 50; // Value retrieved from web server on pos change
 int stand_y_pos_control = 100;
-int stand_x_pos = 50;
+int stand_x_pos = 50; // Real microphone position
 int stand_y_pos = 100;
-// Difference ints to prevent the creation of a new var each cycle of controlSteppers()
+
+// Difference ints to prevent the creation of a new var each cycle of
+// controlSteppers()
 int x_diff = 0;
 int y_diff = 0;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////WebServer
+/*
+WebServer
+*/
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 
-String message = "";
-String sliderValue1 = "50";
+String message = ""; // message sent by web socket
+String sliderValue1 = "50"; // ESP32 tracking of web server slider position
 String sliderValue2 = "100";
-
-int dutyCycle1;
-int dutyCycle2;
 
 //Json Variable to Hold Slider Values
 JSONVar sliderAndLiveValues;
@@ -162,7 +216,16 @@ String getSliderAndLiveValues(){
   return jsonString;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Page CSS, HTML, Javascript
+/*
+Page CSS, HTML, Javascript
+*/
+// All code for the control webpage is found below. CSS file must be uploaded
+// via the Arduino IDE Tools->ESP32 Sketch Data Upload or equivalent. CSS file
+// be found in the /data directory of this repository. All Javascript is in the
+// below HTML in the <script> tag.
+// The amount of JS got a bit out of hand and could really be placed in the
+// /data dir as well. It turned out to be much easier to edit at the time
+// in this file however.
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
@@ -422,12 +485,15 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////WebSocket response functions
+/*
+WebSocket response functions
+*/
 void notifyClients(String sliderAndLiveValues) {
   Serial.println("Slider values from notifyClients: ");
   Serial.println(sliderAndLiveValues);
   ws.textAll(sliderAndLiveValues);
 }
+
 
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
   AwsFrameInfo *info = (AwsFrameInfo*)arg;
@@ -449,28 +515,6 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     if (strcmp((char*)data, "getValues") == 0) {
       notifyClients(getSliderAndLiveValues());
     }
-    // THESE IF STATEMENTS ARE NO LONGER NEEDED AFTER updateSliderPWMFromButton() IMPLEMENTATION
-//    if (strcmp((char*)data, "moveleft") == 0) {
-//      stand_x_pos_control--;
-//      delay(500);
-//      notifyClients(getSliderAndLiveValues());
-//    }
-//    if (strcmp((char*)data, "moveright") == 0) {
-//      stand_x_pos_control++;
-//      delay(500);
-//      notifyClients(getSliderAndLiveValues());
-//    }
-//    // Had to switch the rotation here for some reason. ESP32 acting strange
-//    if (strcmp((char*)data, "movefurther") == 0) {
-//      stand_y_pos_control--;
-//      delay(500);
-//      notifyClients(getSliderAndLiveValues());
-//    }
-//    if (strcmp((char*)data, "movecloser") == 0) {
-//      stand_y_pos_control++;
-//      delay(500);
-//      notifyClients(getSliderAndLiveValues());
-//    }
 
       if (strcmp((char*)data, "calibrate") == 0) {
         stand_x_pos_control = 50;
@@ -483,6 +527,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
       }
   }
 }
+
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len) {
@@ -502,12 +547,16 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////WebSocket init
+
+/*
+WebSocket init
+*/
 void initWebSocket() {
   ws.onEvent(onEvent);
   server.addHandler(&ws);
   Serial.printf("WebSocket initiated.");
 }
+
 
 String processor(const String& var){
   Serial.println(var);
@@ -519,7 +568,9 @@ String processor(const String& var){
   return String();
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////setup()
+/*
+setup()
+*/
 void setup(){
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -546,6 +597,7 @@ void setup(){
   
   initWebSocket();
 
+  // Below files found in the /data directory of this repository
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/html", index_html, processor);
@@ -576,12 +628,16 @@ void setup(){
     request->send(SPIFFS, "/sm57transcrop.png", "image/png");
   });
 
-  // Start server
+  // Start web server
   server.begin();
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////loop() functions
-void spinMotor1(const bool &dir, const int &amt) { // Motor direction (false is clockwise, true is anticlockwise) and number of steps
+
+/*
+loop() functions
+*/
+// Motor direction (false is clockwise, true is anticlockwise) and number of steps
+void spinMotor1(const bool &dir, const int &amt) {
   digitalWrite(MOTORPOSEN, LOW); // Enable motor
   delayMicroseconds(motorStepDelay);
   
@@ -601,7 +657,9 @@ void spinMotor1(const bool &dir, const int &amt) { // Motor direction (false is 
   digitalWrite(MOTORPOSEN, HIGH); // Disable motor when work is done
 }
 
-void spinMotor2(const bool &dir, const int &amt) { // Motor direction (true is clockwise, false is anticlockwise) and number of steps
+
+// Motor direction (true is clockwise, false is anticlockwise) and number of steps
+void spinMotor2(const bool &dir, const int &amt) {
   digitalWrite(MOTORDISTEN, LOW); // Enable motor
   delayMicroseconds(motorStepDelay);
   
@@ -621,18 +679,25 @@ void spinMotor2(const bool &dir, const int &amt) { // Motor direction (true is c
   digitalWrite(MOTORDISTEN, HIGH); // Disable motor when work is done
 }
 
+
 void controlSteppers() {
-  if (stand_x_pos != stand_x_pos_control) { // If the real position is not the same as the GUI control
+  // If the real position is not the same as the GUI control
+  if (stand_x_pos != stand_x_pos_control) {
     
     if (stand_x_pos > stand_x_pos_control) {
-      x_diff = stand_x_pos - stand_x_pos_control; // Calc the difference between the real position and control
-      spinMotor1(false, (x_diff * stepsForDividedTurn)); // Turn the motor to bring the real pos to the GUI control
-      stand_x_pos = stand_x_pos - x_diff; // Update the real position
+      // Calc the difference between the real position and control
+      x_diff = stand_x_pos - stand_x_pos_control;
+
+      // Turn the motor to bring the real pos to the GUI control
+      spinMotor1(false, (x_diff * stepsForOneSliderMove));
+      
+      // Update the real position
+      stand_x_pos = stand_x_pos - x_diff;
     }
 
     if (stand_x_pos < stand_x_pos_control) {
       x_diff = stand_x_pos_control - stand_x_pos;
-      spinMotor1(true, (x_diff * stepsForDividedTurn));
+      spinMotor1(true, (x_diff * stepsForOneSliderMove));
       stand_x_pos = stand_x_pos + x_diff;
     }
   }
@@ -641,19 +706,22 @@ void controlSteppers() {
     
     if (stand_y_pos > stand_y_pos_control) {
       y_diff = stand_y_pos - stand_y_pos_control;
-      spinMotor2(true, (y_diff * stepsForDividedTurn));
+      spinMotor2(true, (y_diff * stepsForOneSliderMove));
       stand_y_pos = stand_y_pos - y_diff;
     }
 
     if (stand_y_pos < stand_y_pos_control) {
       y_diff = stand_y_pos_control - stand_y_pos;
-      spinMotor2(false, (y_diff * stepsForDividedTurn));
+      spinMotor2(false, (y_diff * stepsForOneSliderMove));
       stand_y_pos = stand_y_pos + y_diff;
     }
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////loop()
+
+/*
+loop()
+*/
 void loop() {
   //Web server housekeeping
   ws.cleanupClients();
