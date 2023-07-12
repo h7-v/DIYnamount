@@ -1,4 +1,5 @@
 # DIYnamount
+![DIYnamount on a Speaker](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/stand.JPG)
 This project exists as a do-it-yourself alternative to the popular DynaMount microphone stand.
 https://dynamount.com/
 
@@ -53,9 +54,7 @@ There are a few lines of code that should be modified in **diynamount_v03.ino** 
 #define  MOTORDISTDIR  25
 #define  MOTORDISTSTEP  33
 ```
-These defines are used to set which pins are used for motor driver control. Consult the below schematic for context. These numbers may need to be changed depending on your ESP32.
-
-**TODO: Add schematic image**
+These defines are used to set which pins are used for motor driver control. Consult the schematic below for context. These numbers may need to be changed depending on your ESP32.
 
 
 ### Setting distance and speed:
@@ -99,13 +98,19 @@ Don't underestimate this step as there is often a metric/imperial mismatch betwe
 
 The whole unit must then be mounted on a short microphone stand with a heavy enough base to support all positions that the microphone can be set to. I would highly recommend Gravity microphone stands because of their heavy base: https://www.gravitystands.com/en/products/microphone-stands/2882/ms-2222-b
 
+As mentioned previously, there is currently no PCB available so this build currently only exists on an 830 tie-point breadboard. See below for a wiring schematic along with some supporting images.
+![Wiring Schematic](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/diynamount_schematic.png)
+![Wiring](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/full-wiring.JPG)
+![Logic Wiring](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/logic-wiring.JPG)
+![ESP32 Wiring](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/esp32.JPG)
+![Driver 1 Wiring](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/driver1.JPG)
+![Driver 2 Wiring](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/driver2.JPG)
+
 ## How to Use
 Note that Wi-Fi configuration and control can both be done from either a desktop or smart device web browser.
 
 ### Network Connection
 Upon completing the unit and powering it on for the first time, the ESP32 will create a Wi-Fi access point named "DIYnamount Config" which can be connected to without a password. Once connected open your web browser. In the address bar navigate to 192.168.4.1:81 and you will be greeted with a WiFiManager page. Search for and select your wireless network and provide credentials if necessary. When the ESP32 successfully connects to your network an LED will flash three times and stay lit before your computer or mobile device loses connection to the ESP32.
-
-**TODO: Add image of WiFiManager page**
 
 The control interface will now be accessible on any device with a web browser that is connected to the same network as the stand. Simply navigate to 192.168.1.117 (or otherwise if you changed this earlier) in your address bar. If more than one device is on the control panel at the same time the control sliders will be synchronised across both devices.
 
@@ -116,7 +121,7 @@ The default position of the stand should be in the middle of the speaker cone an
 
 As you move the sliders the microphone will also move on its rails. There are -1/+1 buttons to incrementally move the microphone if precision is necessary. The small image of an SM57 microphone displays the current real position of the microphone on the stand itself.
 
-**TODO: Add image of control interface page**
+![Control Inteface](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/control_webpage.png)
 
 Moving the slider should be analogous to the position of the microphone on its rail. If the microphone moves too far or doesn't move far enough, the STEPSPERUNITMOVEMENT value should be modified. The MOTORSPEED value should also be increased if the motor is moving too fast and therefore not providing a smooth motion of the microphone.
 
