@@ -1,13 +1,10 @@
 /*********
-  Matt Conybeare
-  DIYnamount project code written by MCA using libraries included below.
-  ESPAsyncWebServer code written by Rui Santos and extended by MCA.
-  https://www.mcaud.io/
+  Project code written by
   https://github.com/h7-v
-  https://fosstodon.org/@h7
 *********/
 
 /*********
+  ESP32 Web server code used from
   Rui Santos
   Complete project details at
   https://RandomNerdTutorials.com/esp32-websocket-server-arduino/
@@ -235,13 +232,10 @@ const char index_html[] PROGMEM = R"rawliteral(
 <head>
   <title>DIYnamount</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="mcalogofavicon">
-  <link rel="stylesheet" href="mcastylesheet">
+  <link rel="stylesheet" href="microbotstylesheet">
 </head>
 <body>
   <div class="topnav">
-    <img src="mcalogo">
-    <h2 style="font-size: 1rem; font-weight: bold; font-style: italic; color: #FFFFFF;">Matt Conybeare Audio</h2>
     <h1>DIYnamount Control</h1>
     <h2 id="stateconnectionstatus" style="color: #FFB121">Connecting to stand server. Please wait...</h2>
   </div>
@@ -607,19 +601,9 @@ void setup(){
     request->send_P(200, "text/html", index_html, processor);
   });
 
-  // Route for MCA Logo favicon png file
-  server.on("/mcalogofavicon", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/mcafavicon.png", "image/png");
-  });
-
   // Route for CSS file
-  server.on("/mcastylesheet", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/mcastylesheet.css", "text/css");
-  });
-
-  // Route for MCA Logo png file
-  server.on("/mcalogo", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/smallmcalogowithwhitespace.png", "image/png");
+  server.on("/microbotstylesheet", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(SPIFFS, "/microbotstylesheet.css", "text/css");
   });
 
   // Route for Celestion v30 png file
