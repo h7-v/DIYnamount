@@ -42,9 +42,9 @@ Selecting the correct board:
 In the Arduino IDE click Tools -> Board: -> Boards Manager... and make sure you have esp32 installed.
 https://github.com/espressif/arduino-esp32
 
-**IMPORTANT!**
+### IMPORTANT!
 There are a few lines of code that should be modified in **diynamount_v03.ino** which control which pins do what, and how far and fast the motors should operate. These lines are found at the top of the file just below the library includes.
-**Setting pins:**
+### Setting pins:
 ```
 #define  MOTORPOSEN  26 // HIGH turns motor off, LOW turns motor on
 #define  MOTORDISTEN  32 // HIGH turns motor off, LOW turns motor on
@@ -58,7 +58,7 @@ These defines are used to set which pins are used for motor driver control. Cons
 **TODO: Add schematic image**
 
 
-**Setting distance and speed:**
+### Setting distance and speed:
 ```
 #define  STEPSPERUNITMOVEMENT  58
 #define  MOTORSPEED  700
@@ -69,7 +69,7 @@ MOTORSPEED corresponds to the amount of time to wait between each motor step. Th
 
 Note that the above numbers are simply what I landed on when adjusting for my build.
 
-**Connecting to a wireless network:**
+### Connecting to a wireless network:
 If your wireless network does not allocate IP addresses in the format 192.168.1.x then consider scrolling further down and changing the static IP address that the stand will request.
 ```
 wm.setSTAStaticIPConfig(IPAddress(192,168,1,117), // IP address
@@ -102,7 +102,7 @@ The whole unit must then be mounted on a short microphone stand with a heavy eno
 ## How to Use
 Note that Wi-Fi configuration and control can both be done from either a desktop or smart device web browser.
 
-**Network Connection**
+### Network Connection
 Upon completing the unit and powering it on for the first time, the ESP32 will create a Wi-Fi access point named "DIYnamount Config" which can be connected to without a password. Once connected open your web browser. In the address bar navigate to 192.168.4.1:81 and you will be greeted with a WiFiManager page. Search for and select your wireless network and provide credentials if necessary. When the ESP32 successfully connects to your network an LED will flash three times and stay lit before your computer or mobile device loses connection to the ESP32.
 
 **TODO: Add image of WiFiManager page**
@@ -111,7 +111,7 @@ The control interface will now be accessible on any device with a web browser th
 
 In case the connection between the stand and the network is dropped the ESP32 should be power cycled. Previous Wi-Fi credentials will be deleted so you must reconnect it to your network.
 
-**Using the Control Interface**
+### Using the Control Interface
 The default position of the stand should be in the middle of the speaker cone and at its closest to the speaker cone. Make sure that you move the microphone manually into this starting position before proceeding with remote control. Click the "Calibrate Controls" button to return the sliders to this default position.
 
 As you move the sliders the microphone will also move on its rails. There are -1/+1 buttons to incrementally move the microphone if precision is necessary. The small image of an SM57 microphone displays the current real position of the microphone on the stand itself.
