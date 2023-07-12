@@ -24,16 +24,16 @@ Includes and defines
 // Import required libraries
 #include <Arduino.h>
 #include <WiFi.h>
-#include <AsyncTCP.h>
+#include <AsyncTCP.h> // https://github.com/dvarrel/AsyncTCP
 #include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
 
 // Fixes for HTTP compiler errors (if needed)
 //#define WEBSERVER_H
 //#include "WebServer.h"
 
-#include <ESPAsyncWebServer.h>
-#include <SPIFFS.h>
-#include <Arduino_JSON.h>
+#include <ESPAsyncWebServer.h> // https://github.com/me-no-dev/ESPAsyncWebServer
+#include <SPIFFS.h> // https://github.com/espressif/arduino-esp32/tree/master/libraries/SPIFFS
+#include <Arduino_JSON.h> // https://github.com/arduino-libraries/Arduino_JSON
 
 // Breadboard position from left to right: ESP32, TMC2208 (MOTORPOS) for
 // speaker position, TMC2208 (MOTORDIST) for speaker distance.
@@ -48,6 +48,10 @@ Includes and defines
 #define MOTORPOSSTEP 27
 #define MOTORDISTDIR 25
 #define MOTORDISTSTEP 33
+
+// See README.md
+#define STEPSPERUNITMOVEMENT 58
+#define MOTORSPEED 700
 
 /*
 setup() functions and lib init
@@ -171,11 +175,11 @@ Physical parts setup
 // adjusted according to the length of your aluminium extrusion.
 // This constant also assumes that both position and distance extrusions are
 // the same length.
-const int stepsForOneSliderMove = 58;
+const int stepsForOneSliderMove = STEPSPERUNITMOVEMENT;
 
 // Time spent waiting between step pulses. Lower values rotate the motors
 // faster. This constant controls the speed of both motors simultaneously.
-const int motorStepDelay = 700;
+const int motorStepDelay = MOTORSPEED;
 //**************************************************
 
 // x_pos = Horizontal position to speaker
