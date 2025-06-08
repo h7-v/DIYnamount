@@ -123,7 +123,7 @@ As you move the sliders the microphone will also move on its rails. There are -1
 
 ![Control Inteface](https://raw.githubusercontent.com/h7-v/DIYnamount/main/images/control_webpage.png)
 
-Moving the slider should be analogous to the position of the microphone on its rail. If the microphone moves too far or doesn't move far enough, the STEPSPERUNITMOVEMENT value should be modified. The MOTORSPEED value should also be increased if the motor is moving too fast and therefore not providing a smooth motion of the microphone.
+Moving the slider should be analogous to the position of the microphone on its rail. If the microphone moves too far or doesn't move far enough, the STEPSPERUNITMOVEMENT value should be modified. The MOTORSPEED value (delay between step pulses) should also be **increased** if the motor is moving too fast, resulting in jerky or unsmooth microphone motion.
 
 ## Special Thanks
 - Rui Santos at https://randomnerdtutorials.com/ for his base ESP WebSocket code
